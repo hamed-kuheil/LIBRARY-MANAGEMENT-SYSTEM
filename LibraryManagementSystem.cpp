@@ -1,6 +1,5 @@
 #include <iostream>
 #include <string>
-#include <iomanip>
 using namespace std;
 
 // ================= QUEUE =================
@@ -22,14 +21,14 @@ public:
         front = rear = nullptr;
     }
 
-    void enqueue(string name) {
-        QNode* n = new QNode(name);
+    void enqueue(string n) {
+        QNode* temp = new QNode(n);
 
         if (!rear)
-            front = rear = n;
+            front = rear = temp;
         else {
-            rear->next = n;
-            rear = n;
+            rear->next = temp;
+            rear = temp;
         }
     }
 
@@ -38,7 +37,7 @@ public:
             return "";
 
         QNode* temp = front;
-        string name = temp->name;
+        string n = temp->name;
 
         front = front->next;
 
@@ -46,70 +45,27 @@ public:
             rear = nullptr;
 
         delete temp;
-        return name;
+        return n;
     }
 
     bool empty() {
         return front == nullptr;
     }
-
-    void display() {
-        QNode* cur = front;
-        int i = 1;
-
-        while (cur) {
-            cout << i++ << ". " << cur->name << endl;
-            cur = cur->next;
-        }
-
-        if (!front)
-            cout << "Waitlist empty\n";
-    }
 };
 
 // ================= BOOK =================
 class Book {
+public:
     int id;
-    string title, author;
+    string title;
     bool available;
     string borrower;
-
-public:
     Queue waitlist;
 
-    Book(int i = 0, string t = "", string a = "") {
+    Book(int i = 0, string t = "") {
         id = i;
         title = t;
-        author = a;
         available = true;
-    }
-
-    int getID() { return id; }
-    string getTitle() { return title; }
-    string getAuthor() { return author; }
-    bool isAvailable() { return available; }
-    string getBorrower() { return borrower; }
-
-    bool borrow(string student) {
-        if (!available)
-            return false;
-
-        available = false;
-        borrower = student;
-        return true;
-    }
-
-    string giveBack() {
-        available = true;
-        borrower = "";
-
-        if (!waitlist.empty()) {
-            borrower = waitlist.dequeue();
-            available = false;
-            return borrower;
-        }
-
-        return "";
     }
 };
 
@@ -118,7 +74,9 @@ struct DLL {
     Book book;
     DLL *next, *prev;
 
-    DLL(int id, string t, string a) : book(id, t, a) {
+    DLL(int id, string title)
+        : book(id, title) {
+
         next = prev = nullptr;
     }
 };
@@ -131,35 +89,18 @@ public:
         head = tail = nullptr;
     }
 
-    DLL* add(int id, string t, string a) {
-        DLL* n = new DLL(id, t, a);
+    DLL* add(int id, string title) {
+        DLL* temp = new DLL(id, title);
 
         if (!head)
-            head = tail = n;
+            head = tail = temp;
         else {
-            tail->next = n;
-            n->prev = tail;
-            tail = n;
+            tail->next = temp;
+            temp->prev = tail;
+            tail = temp;
         }
 
-        return n;
-    }
-
-    void remove(DLL* node) {
-        if (!node)
-            return;
-
-        if (node == head)
-            head = head->next;
-        else
-            node->prev->next = node->next;
-
-        if (node == tail)
-            tail = tail->prev;
-        else if (node->next)
-            node->next->prev = node->prev;
-
-        delete node;
+        return temp;
     }
 
     DLL* getHead() {
@@ -222,167 +163,88 @@ public:
     }
 };
 
-// ================= STACK =================
-struct Transaction {
-    int id;
-    string student, action;
-};
-
-struct SNode {
-    Transaction data;
-    SNode* next;
-
-    SNode(Transaction t) {
-        data = t;
-        next = nullptr;
-    }
-};
-
-class Stack {
-    SNode* top;
-
-public:
-    Stack() {
-        top = nullptr;
-    }
-
-    void push(Transaction t) {
-        SNode* n = new SNode(t);
-        n->next = top;
-        top = n;
-    }
-
-    void display() {
-        if (!top) {
-            cout << "No transactions\n";
-            return;
-        }
-
-        SNode* cur = top;
-
-        while (cur) {
-            cout << cur->data.action
-                 << " | Book ID: " << cur->data.id
-                 << " | Student: " << cur->data.student
-                 << endl;
-
-            cur = cur->next;
-        }
-    }
-};
-
 // ================= LIBRARY =================
 class Library {
-    List books;
-    Tree index;
-    Stack history;
+    List list;
+    Tree tree;
 
 public:
-    void addBook(int id, string t, string a) {
-        if (index.search(id)) {
+    void addBook(int id, string title) {
+
+        if (tree.search(id)) {
             cout << "Book already exists\n";
             return;
         }
 
-        DLL* n = books.add(id, t, a);
-        index.insert(id, n);
+        DLL* node = list.add(id, title);
+        tree.insert(id, node);
 
         cout << "Book added\n";
     }
 
     void displayBooks() {
-        DLL* cur = books.getHead();
-
-        if (!cur) {
-            cout << "No books available\n";
-            return;
-        }
-
-        cout << left
-             << setw(10) << "ID"
-             << setw(25) << "Title"
-             << setw(20) << "Author"
-             << setw(15) << "Status"
-             << endl;
+        DLL* cur = list.getHead();
 
         while (cur) {
-            cout << left
-                 << setw(10) << cur->book.getID()
-                 << setw(25) << cur->book.getTitle()
-                 << setw(20) << cur->book.getAuthor()
-                 << setw(15)
-                 << (cur->book.isAvailable() ? "Available" : "Borrowed")
-                 << endl;
+            cout << cur->book.id
+                 << " - "
+                 << cur->book.title
+                 << " ("
+                 << (cur->book.available ? "Available" : "Borrowed")
+                 << ")\n";
 
             cur = cur->next;
         }
     }
 
-    void searchBook(int id) {
-        DLL* n = index.search(id);
-
-        if (!n) {
-            cout << "Book not found\n";
-            return;
-        }
-
-        cout << "Title: " << n->book.getTitle() << endl;
-        cout << "Author: " << n->book.getAuthor() << endl;
-        cout << "Status: "
-             << (n->book.isAvailable() ? "Available" : "Borrowed")
-             << endl;
-    }
-
     void borrowBook(int id, string student) {
-        DLL* n = index.search(id);
+        DLL* node = tree.search(id);
 
-        if (!n) {
+        if (!node) {
             cout << "Book not found\n";
             return;
         }
 
-        if (n->book.borrow(student)) {
+        if (node->book.available) {
+            node->book.available = false;
+            node->book.borrower = student;
+
             cout << "Book borrowed\n";
-            history.push({id, student, "Borrowed"});
         }
         else {
-            cout << "Book unavailable, added to waitlist\n";
-            n->book.waitlist.enqueue(student);
+            node->book.waitlist.enqueue(student);
+            cout << "Added to waitlist\n";
         }
     }
 
     void returnBook(int id) {
-        DLL* n = index.search(id);
+        DLL* node = tree.search(id);
 
-        if (!n) {
+        if (!node) {
             cout << "Book not found\n";
             return;
         }
 
-        string oldStudent = n->book.getBorrower();
-        string next = n->book.giveBack();
-
-        history.push({id, oldStudent, "Returned"});
+        if (node->book.waitlist.empty()) {
+            node->book.available = true;
+            node->book.borrower = "";
+        }
+        else {
+            node->book.borrower = node->book.waitlist.dequeue();
+            cout << "Book given to next student: "
+                 << node->book.borrower << endl;
+        }
 
         cout << "Book returned\n";
-
-        if (next != "")
-            cout << "Automatically issued to " << next << endl;
     }
 
-    void showWaitlist(int id) {
-        DLL* n = index.search(id);
+    void searchBook(int id) {
+        DLL* node = tree.search(id);
 
-        if (!n) {
+        if (!node)
             cout << "Book not found\n";
-            return;
-        }
-
-        n->book.waitlist.display();
-    }
-
-    void transactions() {
-        history.display();
+        else
+            cout << node->book.title << endl;
     }
 };
 
@@ -391,23 +253,19 @@ int main() {
 
     Library lib;
 
-    // Default Books
-    lib.addBook(101, "Clean Code", "Robert Martin");
-    lib.addBook(102, "Data Structures", "Mark Allen");
+    lib.addBook(101, "Clean Code");
+    lib.addBook(102, "Data Structures");
 
     int ch, id;
-    string title, author, student;
+    string title, student;
 
     do {
-        cout << "\n===== LIBRARY SYSTEM =====\n";
-        cout << "1. Add Book\n";
-        cout << "2. Display Books\n";
-        cout << "3. Search Book\n";
-        cout << "4. Borrow Book\n";
-        cout << "5. Return Book\n";
-        cout << "6. Show Waitlist\n";
-        cout << "7. Transactions\n";
-        cout << "8. Exit\n";
+        cout << "\n1.Add Book\n";
+        cout << "2.Display Books\n";
+        cout << "3.Search Book\n";
+        cout << "4.Borrow Book\n";
+        cout << "5.Return Book\n";
+        cout << "6.Exit\n";
         cout << "Choice: ";
 
         cin >> ch;
@@ -423,10 +281,7 @@ int main() {
             cout << "Title: ";
             getline(cin, title);
 
-            cout << "Author: ";
-            getline(cin, author);
-
-            lib.addBook(id, title, author);
+            lib.addBook(id, title);
             break;
 
         case 2:
@@ -434,7 +289,7 @@ int main() {
             break;
 
         case 3:
-            cout << "Enter ID: ";
+            cout << "ID: ";
             cin >> id;
 
             lib.searchBook(id);
@@ -445,7 +300,7 @@ int main() {
             cin >> id;
             cin.ignore();
 
-            cout << "Student Name: ";
+            cout << "Student: ";
             getline(cin, student);
 
             lib.borrowBook(id, student);
@@ -457,27 +312,9 @@ int main() {
 
             lib.returnBook(id);
             break;
-
-        case 6:
-            cout << "Book ID: ";
-            cin >> id;
-
-            lib.showWaitlist(id);
-            break;
-
-        case 7:
-            lib.transactions();
-            break;
-
-        case 8:
-            cout << "Goodbye\n";
-            break;
-
-        default:
-            cout << "Invalid choice\n";
         }
 
-    } while (ch != 8);
+    } while (ch != 6);
 
     return 0;
 }
