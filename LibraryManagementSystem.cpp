@@ -3,7 +3,7 @@
 // Final Project - Data Structures using C++
 // Data Structures Used:
 // 1. Doubly Linked List
-// 2. Binary Search Tree (BST)
+// // 2. Binary Search Tree (BST)
 // 3. Queue
 // 4. Stack
 // =============================================================================
@@ -15,7 +15,7 @@
 using namespace std;
 
 // =============================================================================
-// Queue
+// Queue (Waitlist)
 // =============================================================================
 
 struct QueueNode {
@@ -53,7 +53,8 @@ public:
 
         if (!rear) {
             front = rear = newNode;
-        } else {
+        }
+        else {
             rear->next = newNode;
             rear = newNode;
         }
@@ -62,7 +63,8 @@ public:
     }
 
     string dequeue() {
-        if (!front) return "";
+        if (!front)
+            return "";
 
         QueueNode* temp = front;
         string name = temp->studentName;
@@ -96,15 +98,14 @@ public:
         int position = 1;
 
         while (current) {
-            cout << position++ << ". "
-                 << current->studentName << endl;
+            cout << position++ << ". " << current->studentName << endl;
             current = current->next;
         }
     }
 };
 
 // =============================================================================
-// Book
+// Book Class
 // =============================================================================
 
 class Book {
@@ -118,7 +119,7 @@ private:
 public:
     WaitlistQueue waitlist;
 
-    Book(int i, string t, string a) {
+    Book(int i = 0, string t = "", string a = "") {
         id = i;
         title = t;
         author = a;
@@ -212,7 +213,8 @@ public:
 
         if (!head) {
             head = tail = newNode;
-        } else {
+        }
+        else {
             tail->next = newNode;
             newNode->prev = tail;
             tail = newNode;
@@ -222,7 +224,8 @@ public:
     }
 
     bool removeBook(DLLNode* node) {
-        if (!node) return false;
+        if (!node)
+            return false;
 
         if (node == head)
             head = head->next;
@@ -231,7 +234,7 @@ public:
 
         if (node == tail)
             tail = tail->prev;
-        else
+        else if (node->next)
             node->next->prev = node->prev;
 
         delete node;
@@ -305,7 +308,7 @@ private:
     }
 
     BSTNode* findMin(BSTNode* node) {
-        while (node->left)
+        while (node && node->left)
             node = node->left;
 
         return node;
@@ -327,7 +330,6 @@ private:
                 delete node;
                 return temp;
             }
-
             else if (!node->right) {
                 BSTNode* temp = node->left;
                 delete node;
@@ -346,7 +348,8 @@ private:
     }
 
     void destroy(BSTNode* node) {
-        if (!node) return;
+        if (!node)
+            return;
 
         destroy(node->left);
         destroy(node->right);
@@ -377,12 +380,13 @@ public:
 };
 
 // =============================================================================
-// Stack
+// Stack (Transaction History)
 // =============================================================================
 
 struct Transaction {
     int bookID;
     string studentName;
+    string action;
 };
 
 struct StackNode {
@@ -436,6 +440,23 @@ public:
     bool isEmpty() {
         return top == nullptr;
     }
+
+    void display() {
+        if (!top) {
+            cout << "No transactions available.\n";
+            return;
+        }
+
+        StackNode* current = top;
+
+        while (current) {
+            cout << "Book ID: " << current->data.bookID
+                 << " | Student: " << current->data.studentName
+                 << " | Action: " << current->data.action << endl;
+
+            current = current->next;
+        }
+    }
 };
 
 // =============================================================================
@@ -463,6 +484,20 @@ public:
         cout << "Book added successfully.\n";
     }
 
+    void removeBook(int id) {
+        DLLNode* node = index.search(id);
+
+        if (!node) {
+            cout << "Book not found.\n";
+            return;
+        }
+
+        catalog.removeBook(node);
+        index.remove(id);
+
+        cout << "Book removed successfully.\n";
+    }
+
     void displayBooks() {
 
         DLLNode* current = catalog.getHead();
@@ -478,9 +513,10 @@ public:
              << setw(30) << "Title"
              << setw(25) << "Author"
              << setw(15) << "Status"
+             << setw(20) << "Borrowed By"
              << endl;
 
-        cout << string(80, '-') << endl;
+        cout << string(100, '-') << endl;
 
         while (current) {
 
@@ -494,21 +530,225 @@ public:
             else
                 cout << setw(15) << "Borrowed";
 
-            cout << endl;
+            cout << setw(20)
+                 << (current->book.isAvailable() ? "-" : current->book.getBorrowedBy())
+                 << endl;
 
             current = current->next;
         }
     }
+
+    void searchBook(int id) {
+        DLLNode* node = index.search(id);
+
+        if (!node) {
+            cout << "Book not found.\n";
+            return;
+        }
+
+        cout << "\nBook Found:\n";
+        cout << "ID: " << node->book.getID() << endl;
+        cout << "Title: " << node->book.getTitle() << endl;
+        cout << "Author: " << node->book.getAuthor() << endl;
+
+        if (node->book.isAvailable())
+            cout << "Status: Available\n";
+        else
+            cout << "Status: Borrowed by "
+                 << node->book.getBorrowedBy() << endl;
+    }
+
+    void borrowBook(int id, string studentName) {
+        DLLNode* node = index.search(id);
+
+        if (!node) {
+            cout << "Book not found.\n";
+            return;
+        }
+
+        if (node->book.borrowBook(studentName)) {
+            cout << "Book borrowed successfully.\n";
+
+            Transaction t;
+            t.bookID = id;
+            t.studentName = studentName;
+            t.action = "Borrowed";
+
+            transactions.push(t);
+        }
+        else {
+            cout << "Book already borrowed.\n";
+            cout << "Added to waitlist.\n";
+
+            node->book.waitlist.enqueue(studentName);
+        }
+    }
+
+    void returnBook(int id) {
+        DLLNode* node = index.search(id);
+
+        if (!node) {
+            cout << "Book not found.\n";
+            return;
+        }
+
+        if (node->book.isAvailable()) {
+            cout << "Book is already available in library.\n";
+            return;
+        }
+
+        string oldBorrower = node->book.getBorrowedBy();
+        string nextStudent = node->book.returnBook();
+
+        Transaction t;
+        t.bookID = id;
+        t.studentName = oldBorrower;
+        t.action = "Returned";
+
+        transactions.push(t);
+
+        cout << "Book returned successfully.\n";
+
+        if (nextStudent != "") {
+            cout << "Book automatically issued to: "
+                 << nextStudent << endl;
+        }
+    }
+
+    void showWaitlist(int id) {
+        DLLNode* node = index.search(id);
+
+        if (!node) {
+            cout << "Book not found.\n";
+            return;
+        }
+
+        cout << "\nWaitlist for book: "
+             << node->book.getTitle() << endl;
+
+        node->book.waitlist.display();
+    }
+
+    void showTransactions() {
+        cout << "\nTransaction History:\n";
+        transactions.display();
+    }
 };
+
+// =============================================================================
+// Main Function
+// =============================================================================
 
 int main() {
 
     LibrarySystem library;
 
-    library.addBook(101, "Clean Code", "Robert Martin");
-    library.addBook(102, "Data Structures", "Mark Allen");
+    int choice;
 
-    library.displayBooks();
+    do {
+        cout << "\n====================================\n";
+        cout << "     LIBRARY MANAGEMENT SYSTEM      \n";
+        cout << "====================================\n";
+
+        cout << "1. Add Book\n";
+        cout << "2. Remove Book\n";
+        cout << "3. Display Books\n";
+        cout << "4. Search Book\n";
+        cout << "5. Borrow Book\n";
+        cout << "6. Return Book\n";
+        cout << "7. Show Waitlist\n";
+        cout << "8. Show Transactions\n";
+        cout << "9. Exit\n";
+
+        cout << "Enter your choice: ";
+        cin >> choice;
+
+        cin.ignore();
+
+        if (choice == 1) {
+            int id;
+            string title, author;
+
+            cout << "Enter Book ID: ";
+            cin >> id;
+            cin.ignore();
+
+            cout << "Enter Title: ";
+            getline(cin, title);
+
+            cout << "Enter Author: ";
+            getline(cin, author);
+
+            library.addBook(id, title, author);
+        }
+
+        else if (choice == 2) {
+            int id;
+
+            cout << "Enter Book ID to remove: ";
+            cin >> id;
+
+            library.removeBook(id);
+        }
+
+        else if (choice == 3) {
+            library.displayBooks();
+        }
+
+        else if (choice == 4) {
+            int id;
+
+            cout << "Enter Book ID to search: ";
+            cin >> id;
+
+            library.searchBook(id);
+        }
+
+        else if (choice == 5) {
+            int id;
+            string student;
+
+            cout << "Enter Book ID: ";
+            cin >> id;
+            cin.ignore();
+
+            cout << "Enter Student Name: ";
+            getline(cin, student);
+
+            library.borrowBook(id, student);
+        }
+
+        else if (choice == 6) {
+            int id;
+
+            cout << "Enter Book ID: ";
+            cin >> id;
+
+            library.returnBook(id);
+        }
+
+        else if (choice == 7) {
+            int id;
+
+            cout << "Enter Book ID: ";
+            cin >> id;
+
+            library.showWaitlist(id);
+        }
+
+        else if (choice == 8) {
+            library.showTransactions();
+        }
+
+        else if (choice == 9) {
+            cout << "Exiting program...\n";
+        }
+
+        else {
+            cout << "Invalid choice. Try again.\n";
+        }
+
+    } while (choice != 9);
 
     return 0;
 }
