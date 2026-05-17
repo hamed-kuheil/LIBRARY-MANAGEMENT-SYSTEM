@@ -51,12 +51,6 @@ public:
     bool empty() {
         return front == nullptr;
     }
-
-    ~Queue() {
-        while (!empty()) {
-            dequeue();
-        }
-    }
 };
 
 // ================= BOOK =================
@@ -72,7 +66,6 @@ public:
         id = i;
         title = t;
         available = true;
-        borrower = "";
     }
 };
 
@@ -112,16 +105,6 @@ public:
 
     DLL* getHead() {
         return head;
-    }
-
-    ~List() {
-        DLL* cur = head;
-
-        while (cur) {
-            DLL* temp = cur;
-            cur = cur->next;
-            delete temp;
-        }
     }
 };
 
@@ -166,16 +149,6 @@ class Tree {
         return search(node->right, id);
     }
 
-    void destroy(BST* node) {
-        if (!node)
-            return;
-
-        destroy(node->left);
-        destroy(node->right);
-
-        delete node;
-    }
-
 public:
     Tree() {
         root = nullptr;
@@ -188,10 +161,6 @@ public:
     DLL* search(int id) {
         return search(root, id);
     }
-
-    ~Tree() {
-        destroy(root);
-    }
 };
 
 // ================= LIBRARY =================
@@ -199,40 +168,8 @@ class Library {
     List list;
     Tree tree;
 
-    // Admin Data
-    string adminName = "admin";
-    string adminPassword = "admin1234";
-
-    bool adminLogin() {
-
-        string username, password;
-
-        cout << "\n===== ADMIN LOGIN =====\n";
-
-        cout << "Username: ";
-        getline(cin, username);
-
-        cout << "Password: ";
-        getline(cin, password);
-
-        if (username == adminName &&
-            password == adminPassword) {
-
-            cout << "Login Successful\n";
-            return true;
-        }
-
-        cout << "Wrong Username or Password\n";
-        return false;
-    }
-
 public:
-
     void addBook(int id, string title) {
-
-        // Admin Authentication
-        if (!adminLogin())
-            return;
 
         if (tree.search(id)) {
             cout << "Book already exists\n";
@@ -242,71 +179,25 @@ public:
         DLL* node = list.add(id, title);
         tree.insert(id, node);
 
-        cout << "Book added successfully\n";
+        cout << "Book added\n";
     }
 
     void displayBooks() {
-
         DLL* cur = list.getHead();
 
-        if (!cur) {
-            cout << "No books in library\n";
-            return;
-        }
-
-        cout << "\n===== BOOKS =====\n";
-
         while (cur) {
-
-            cout << "ID: "
-                 << cur->book.id << endl;
-
-            cout << "Title: "
-                 << cur->book.title << endl;
-
-            cout << "Status: "
-                 << (cur->book.available ?
-                    "Available" : "Borrowed")
-                 << endl;
-
-            if (!cur->book.available) {
-
-                cout << "Borrowed By: "
-                     << cur->book.borrower
-                     << endl;
-            }
-
-            cout << "---------------------\n";
+            cout << cur->book.id
+                 << " - "
+                 << cur->book.title
+                 << " ("
+                 << (cur->book.available ? "Available" : "Borrowed")
+                 << ")\n";
 
             cur = cur->next;
         }
     }
 
-    void searchBook(int id) {
-
-        DLL* node = tree.search(id);
-
-        if (!node) {
-            cout << "Book not found\n";
-            return;
-        }
-
-        cout << "\n===== BOOK FOUND =====\n";
-
-        cout << "ID: "
-             << node->book.id << endl;
-
-        cout << "Title: "
-             << node->book.title << endl;
-
-        cout << "Status: "
-             << (node->book.available ?
-                "Available" : "Borrowed")
-             << endl;
-    }
-
     void borrowBook(int id, string student) {
-
         DLL* node = tree.search(id);
 
         if (!node) {
@@ -315,22 +206,18 @@ public:
         }
 
         if (node->book.available) {
-
             node->book.available = false;
             node->book.borrower = student;
 
-            cout << "Book borrowed successfully\n";
+            cout << "Book borrowed\n";
         }
         else {
-
             node->book.waitlist.enqueue(student);
-
-            cout << "Book unavailable -> Added to waitlist\n";
+            cout << "Added to waitlist\n";
         }
     }
 
     void returnBook(int id) {
-
         DLL* node = tree.search(id);
 
         if (!node) {
@@ -338,27 +225,26 @@ public:
             return;
         }
 
-        if (node->book.available) {
-            cout << "Book already available\n";
-            return;
-        }
-
         if (node->book.waitlist.empty()) {
-
             node->book.available = true;
             node->book.borrower = "";
-
-            cout << "Book returned successfully\n";
         }
         else {
-
-            node->book.borrower =
-                node->book.waitlist.dequeue();
-
-            cout << "Book automatically given to: "
-                 << node->book.borrower
-                 << endl;
+            node->book.borrower = node->book.waitlist.dequeue();
+            cout << "Book given to next student: "
+                 << node->book.borrower << endl;
         }
+
+        cout << "Book returned\n";
+    }
+
+    void searchBook(int id) {
+        DLL* node = tree.search(id);
+
+        if (!node)
+            cout << "Book not found\n";
+        else
+            cout << node->book.title << endl;
     }
 };
 
@@ -367,21 +253,20 @@ int main() {
 
     Library lib;
 
+    lib.addBook(101, "Clean Code");
+    lib.addBook(102, "Data Structures");
+
     int ch, id;
     string title, student;
 
     do {
-
-        cout << "\n========== LIBRARY SYSTEM ==========\n";
-
-        cout << "1. Add Book\n";
-        cout << "2. Display Books\n";
-        cout << "3. Search Book\n";
-        cout << "4. Borrow Book\n";
-        cout << "5. Return Book\n";
-        cout << "6. Exit\n";
-
-        cout << "Enter Choice: ";
+        cout << "\n1.Add Book\n";
+        cout << "2.Display Books\n";
+        cout << "3.Search Book\n";
+        cout << "4.Borrow Book\n";
+        cout << "5.Return Book\n";
+        cout << "6.Exit\n";
+        cout << "Choice: ";
 
         cin >> ch;
         cin.ignore();
@@ -389,64 +274,44 @@ int main() {
         switch (ch) {
 
         case 1:
-
-            cout << "Enter Book ID: ";
+            cout << "ID: ";
             cin >> id;
             cin.ignore();
 
-            cout << "Enter Book Title: ";
+            cout << "Title: ";
             getline(cin, title);
 
             lib.addBook(id, title);
-
             break;
 
         case 2:
-
             lib.displayBooks();
-
             break;
 
         case 3:
-
-            cout << "Enter Book ID: ";
+            cout << "ID: ";
             cin >> id;
 
             lib.searchBook(id);
-
             break;
 
         case 4:
-
-            cout << "Enter Book ID: ";
+            cout << "Book ID: ";
             cin >> id;
             cin.ignore();
 
-            cout << "Enter Student Name: ";
+            cout << "Student: ";
             getline(cin, student);
 
             lib.borrowBook(id, student);
-
             break;
 
         case 5:
-
-            cout << "Enter Book ID: ";
+            cout << "Book ID: ";
             cin >> id;
 
             lib.returnBook(id);
-
             break;
-
-        case 6:
-
-            cout << "Exiting Program...\n";
-
-            break;
-
-        default:
-
-            cout << "Invalid Choice\n";
         }
 
     } while (ch != 6);
